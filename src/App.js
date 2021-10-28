@@ -8,12 +8,19 @@ class App extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      data: store.getState()
+      data: store.getState(),
+      unsubscribe: null
     }
-    this.handleStoreChange = this.handleStoreChange.bind(this)
-    store.subscribe(this.handleStoreChange)
+    this.storeChange = this.storeChange.bind(this)
+  }
+  componentDidMount() {
+    this.setState({
+      unsubscribe: store.subscribe(this.storeChange)
+    })
   }
   render() {
+    const { data } = this.state.data
+    const { handleStoreChange } = this.props
     return (
       <BrowserRouter basename="/react-qiankun">
         <Route path="/" exact render={() => (
@@ -27,22 +34,19 @@ class App extends React.Component {
         </Route>
         <Route path="/app-data" exact render={() => (
           <div className="App-Data">
-            {`我姓${this.state.data.data.firstName}, 叫${this.state.data.data.lastName}`}
-            <button onClick={() => this.props.dispatch({
-              type: 'changeState',
-              value: {
-                firstName: 'lin',
-                lastName: 'huanhuan'
-              }
-            })}>点击</button>
+            {`我姓${data.firstName}, 叫${data.lastName}`}
+            <button onClick={() => handleStoreChange()}>点击</button>
           </div>
         )}>
         </Route>
       </BrowserRouter>
     )
   }
-  handleStoreChange(){
+  storeChange(){
     this.setState({data: store.getState()}); // 触发setState重新获取store的数据
+  }
+  componentWillUnmount() {
+    this.state.unsubscribe()
   }
 }
 function mapStateToProps(state) {
@@ -51,4 +55,18 @@ function mapStateToProps(state) {
   }
 }
 
-export default connect(mapStateToProps)(App);
+const mapDispatchToProps = (dispatch, ownProps) => {
+  return {
+    handleStoreChange: () => {
+      dispatch({
+        type: 'changeState',
+        value: {
+          firstName: 'lin',
+          lastName: 'huanhuan'
+        }
+      })
+    }
+  }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(App);
